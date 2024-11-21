@@ -83,5 +83,5 @@ def process_excel(file_path):
 
 
 # Usage Example
-file_path = r"C:\Users\Pixel\OneDrive\Documents\compiled_filtered_data.xlsx"
+file_path = r"C:\Users\Pixel\OneDrive\Documents\compiled_journal_articles.xlsx"
 process_excel(file_path)

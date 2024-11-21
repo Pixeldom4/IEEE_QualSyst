@@ -1,126 +1,73 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
-from webdriver_manager.chrome import ChromeDriverManager
-import time
 import pandas as pd
-from selenium.common.exceptions import NoSuchElementException
 import requests
+from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
-from io import BytesIO
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+import os
 
-def fetch_proquest_text(driver, proquest_url):
-    # Navigate to the ProQuest URL
-    driver.get(proquest_url)
 
-    # Wait for the page to load
-    time.sleep(5)  # Adjust as needed for page load time
+# Function to download PDF from a URL
+def download_pdf(pdf_url, save_path):
+    response = requests.get(pdf_url, stream=True)
+    if response.status_code == 200:
+        with open(save_path, 'wb') as file:
+            file.write(response.content)
+        print(f"Downloaded: {save_path}")
+    else:
+        print(f"Failed to download PDF: {pdf_url}")
 
-    # Attempt to click the "Accept all" button for cookies
+
+# Function to extract text from a PDF file
+def extract_text_from_pdf(pdf_path):
     try:
-        accept_all_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Accept all')]"))
-        )
-        accept_all_button.click()
-        print("Accepted cookies.")
-    except NoSuchElementException:
-        print("No 'Accept all' button found.")
+        reader = PdfReader(pdf_path)
+        text = ''
+        for page in reader.pages:
+            text += page.extract_text()
+        return text
     except Exception as e:
-        print(f"Failed to click 'Accept all' button: {e}")
+        print(f"Error extracting text from {pdf_path}: {e}")
+        return ""
 
-    # Now attempt to click "Get full text"
-    try:
-        get_full_text_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Get full text"))
-        )
-        get_full_text_button.click()
-    except NoSuchElementException:
-        print(f"Could not find 'Get full text' button on {proquest_url}")
-        return None
-    except Exception as e:
-        print(f"Error clicking 'Get full text' button: {e}")
-        return None
 
-    # Switch to the new tab that opens with the PDF
-    driver.switch_to.window(driver.window_handles[-1])
-    time.sleep(5)  # Wait for the PDF to load in the new tab
-
-    # Get the PDF URL and download it
-    pdf_url = driver.current_url
-    response = requests.get(pdf_url)
-    if response.status_code != 200:
-        print("Failed to download the PDF.")
-        return None
-
-    # Use PdfReader to extract text from the downloaded PDF
-    pdf_text = ""
-    try:
-        pdf_file = BytesIO(response.content)
-        pdf_reader = PdfReader(pdf_file)
-        for page in pdf_reader.pages:
-            pdf_text += page.extract_text()
-    except Exception as e:
-        print(f"Error extracting text from PDF: {e}")
-        pdf_text = None
-
-    # Close the PDF tab and switch back to the original tab
-    driver.close()
-    driver.switch_to.window(driver.window_handles[0])
-
-    return pdf_text
-
-def process_excel(file_path):
-    # Load the Excel file
-    df = pd.read_excel(file_path)
-
-    # Check if "Article Link" column exists
-    if "Article Link" not in df.columns:
-        print("No 'Article Link' column found in the provided file.")
+# Main script
+def process_excel_and_scrape_pdfs(excel_file, output_dir):
+    # Read the Excel file
+    df = pd.read_excel(excel_file)
+    if 'Article Link' not in df.columns:
+        print("Column 'Article Link' not found in the Excel file.")
         return
 
-    # Add a "Full-Text" column if it does not exist and set it as type 'object' for text compatibility
-    if "Full-Text" not in df.columns:
-        df["Full-Text"] = None
-    df["Full-Text"] = df["Full-Text"].astype(object)  # Explicitly set as text-compatible type
+    # Ensure the output directory exists
+    os.makedirs(output_dir, exist_ok=True)
 
-    # Initialize the WebDriver using ChromeDriverManager
-    driver = webdriver.Chrome(ChromeDriverManager().install())
+    # Iterate through links
+    for index, link in enumerate(df['Article Link']):
+        try:
+            response = requests.get(link)
+            soup = BeautifulSoup(response.content, 'html.parser')
 
-    try:
-        # Iterate over each link in the "Article Link" column
-        for index, row in df.iterrows():
-            proquest_url = row["Article Link"]
+            # Find the download PDF button (update this selector based on the website)
+            pdf_button = soup.find('a', href=True, text=lambda t: t and "PDF" in t.upper())
+            if pdf_button:
+                pdf_url = pdf_button['href']
+                if not pdf_url.startswith('http'):
+                    # Make it absolute if it's relative
+                    pdf_url = requests.compat.urljoin(link, pdf_url)
 
-            # Strip any extraneous quotes or whitespace from the URL
-            proquest_url = proquest_url.strip().strip('"')
+                # Download the PDF
+                pdf_path = os.path.join(output_dir, f"article_{index + 1}.pdf")
+                download_pdf(pdf_url, pdf_path)
 
-            if pd.notna(proquest_url):
-                print(f"Processing link: {proquest_url}")
-                full_text = fetch_proquest_text(driver, proquest_url)
-
-                # Append the full text to the "Full-Text" column
-                df.at[index, "Full-Text"] = full_text if full_text is not None else ""
+                # Extract text from the PDF
+                pdf_text = extract_text_from_pdf(pdf_path)
+                print(f"Extracted text for article {index + 1}:\n", pdf_text[:500])  # Preview first 500 chars
             else:
-                print(f"No link found for row {index}")
-
-    except Exception as e:
-        print("An error occurred:", e)
-
-    finally:
-        driver.quit()
-
-    # Save the updated Excel file
-    df.to_excel(file_path, index=False)
-    print("Updated Excel file saved.")
+                print(f"No PDF found for article {index + 1} at {link}")
+        except Exception as e:
+            print(f"Error processing link {link}: {e}")
 
 
-# Usage Example
-file_path = r"C:\Users\Pixel\OneDrive\Documents\Proquest_Papers\test_data_link.xlsx"
-process_excel(file_path)
+# Run the script with your file path
+excel_file = r"C:\Users\Pixel\OneDrive\Documents\compiled_journal_articles.xlsx"
+output_dir = "downloaded_pdfs"
+process_excel_and_scrape_pdfs(excel_file, output_dir)
