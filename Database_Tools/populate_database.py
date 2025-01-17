@@ -6,7 +6,7 @@ import math
 API_URL = "http://127.0.0.1:5000/papers"
 
 # Make sure to adjust your path accordingly.
-file_path = "/Users/derrickwillis/PycharmProjects/IEEE_QualSyst/Databases/qualsyst_spreadsheet_proquest.xlsx"
+file_path = r"C:\Users\Pixel\OneDrive\Documents\proquest_compiled_journal_articles.xlxs"
 df = pd.read_excel(file_path, header=0)
 
 print("Columns in the Excel file:", df.columns)
@@ -17,8 +17,7 @@ for _, row in df.iterrows():
             # Prepare data
             paper_data = {
                 "article_title": row["Article Title"],
-                "authors": row.get("Author(s)", "Unknown"),
-                "contact_info": row.get("Contact Info.", None),
+                "authors": row.get("Article Authors", "Unknown"),
                 "year_published": int(row["Year Published"]) if not pd.isna(row["Year Published"]) else None,
                 "institution": row.get("Institution", None),
                 "num_publications_used": int(row["# of publications used"]) if not pd.isna(row["# of publications used"]) and str(row["# of publications used"]).isdigit() else 0,
