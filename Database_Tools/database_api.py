@@ -13,22 +13,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 """
-These are the columns in the database.
+These are the updated columns in the database.
 """
 class ResearchPaper(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     article_title = db.Column(db.String, nullable=False)
-    authors = db.Column(db.String, nullable=False)
-    contact_info = db.Column(db.String)
-    year_published = db.Column(db.Integer)
-    institution = db.Column(db.String)
-    num_publications_used = db.Column(db.Integer)
-    full_link = db.Column(db.String)
-    shortened_link = db.Column(db.String)
-    is_duplicate = db.Column(db.Boolean, default=False)
-    qual_score_method = db.Column(db.String)
-    study_type = db.Column(db.String)
-    qualsyst_criteria = db.Column(db.String)
+    article_authors = db.Column(db.String, nullable=False)
+    article_abstract = db.Column(db.Text, nullable=True)
+    article_link = db.Column(db.String, nullable=True)
+    search_terms = db.Column(db.String, nullable=True)
 
 
 """Creating the tables in the database."""
@@ -41,23 +34,16 @@ def add_paper():
     """ Add a new research paper."""
     data = request.json
     # Validate required fields
-    if not data.get('article_title') or not data.get('authors'):
-        return jsonify({"error": "article_title and authors are required fields"}), 400
+    if not data.get('article_title') or not data.get('article_authors'):
+        return jsonify({"error": "article_title and article_authors are required fields"}), 400
 
     try:
         new_paper = ResearchPaper(
             article_title=data['article_title'],
-            authors=data['authors'],
-            contact_info=data.get('contact_info'),
-            year_published=data.get('year_published'),
-            institution=data.get('institution'),
-            num_publications_used=data.get('num_publications_used'),
-            full_link=data.get('full_link'),
-            shortened_link=data.get('shortened_link'),
-            is_duplicate=data.get('is_duplicate', False),
-            qual_score_method=data.get('qual_score_method'),
-            study_type=data.get('study_type'),
-            qualsyst_criteria=data.get('qualsyst_criteria'),
+            article_authors=data['article_authors'],
+            article_abstract=data.get('article_abstract'),
+            article_link=data.get('article_link'),
+            search_terms=data.get('search_terms'),
         )
         db.session.add(new_paper)
         db.session.commit()
@@ -76,17 +62,10 @@ def get_papers():
             {
                 "id": paper.id,
                 "article_title": paper.article_title,
-                "authors": paper.authors,
-                "contact_info": paper.contact_info,
-                "year_published": paper.year_published,
-                "institution": paper.institution,
-                "num_publications_used": paper.num_publications_used,
-                "full_link": paper.full_link,
-                "shortened_link": paper.shortened_link,
-                "is_duplicate": paper.is_duplicate,
-                "qual_score_method": paper.qual_score_method,
-                "study_type": paper.study_type,
-                "qualsyst_criteria": paper.qualsyst_criteria,
+                "article_authors": paper.article_authors,
+                "article_abstract": paper.article_abstract,
+                "article_link": paper.article_link,
+                "search_terms": paper.search_terms,
             }
             for paper in papers
         ]
@@ -95,17 +74,25 @@ def get_papers():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/papers', methods=['GET'])
+@app.route('/papers/search', methods=['GET'])
 def get_paper_by_title():
+    """ Search papers by title."""
     title = request.args.get('title')
     if not title:
         return jsonify([]), 200
     papers = ResearchPaper.query.filter(ResearchPaper.article_title.ilike(f"%{title}%")).all()
     result = [
-        {"id": paper.id, "article_title": paper.article_title} for paper in papers
+        {
+            "id": paper.id,
+            "article_title": paper.article_title,
+            "article_authors": paper.article_authors,
+            "article_abstract": paper.article_abstract,
+            "article_link": paper.article_link,
+            "search_terms": paper.search_terms,
+        }
+        for paper in papers
     ]
     return jsonify(result), 200
-
 
 
 if __name__ == '__main__':
