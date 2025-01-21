@@ -1,51 +1,63 @@
 import pandas as pd
 import requests
 import math
+import os
 
 # Correct API URL
 API_URL = "http://127.0.0.1:5000/papers"
 
-# Make sure to adjust your path accordingly.
-file_path = r"C:\Users\Pixel\OneDrive\Documents\proquest_compiled_journal_articles.xlxs"
-df = pd.read_excel(file_path, header=0)
+base_dir = os.path.dirname(__file__)
 
-print("Columns in the Excel file:", df.columns)
+# List of relative file paths
+files = [
+    os.path.join(base_dir, "../Databases/compiled_pubmed.csv"),
+    os.path.join(base_dir, "../Databases/compiled_ovid.csv"),
+    os.path.join(base_dir, "../Databases/compiled_proquest.csv"),
+]
 
-for _, row in df.iterrows():
+# Process each file
+for file_path in files:
+    print(f"Processing file: {file_path}")
+
     try:
-        if pd.notna(row["Article Title"]):
-            # Prepare data
-            paper_data = {
-                "article_title": row["Article Title"],
-                "authors": row.get("Article Authors", "Unknown"),
-                "year_published": int(row["Year Published"]) if not pd.isna(row["Year Published"]) else None,
-                "institution": row.get("Institution", None),
-                "num_publications_used": int(row["# of publications used"]) if not pd.isna(row["# of publications used"]) and str(row["# of publications used"]).isdigit() else 0,
-                "full_link": row.get("Article Link", None),
-                "shortened_link": row.get("Shortened article link", None),
-                "is_duplicate": row["Duplicate?"].strip().lower() == "unique" if "Duplicate?" in row else True,
-                "qual_score_method": row.get("Qual. Score Method", None),
-                "study_type": row.get("Meta-analysis or Sytematic Review", None),
-                "qualsyst_criteria": row.get("QualSyst", None),
-            }
-
-            # Replace NaN values with None
-            paper_data = {key: (None if isinstance(value, float) and math.isnan(value) else value) for key, value in paper_data.items()}
-
-            # Check for duplicates
-            response = requests.get(API_URL, params={"title": paper_data["article_title"]})
-            if response.status_code == 200 and response.json():  # Paper exists
-                print(f"Duplicate found. Skipping: {row['Article Title']}")
-                continue
-
-            print("Data being sent:", paper_data)
-
-            # Post data
-            response = requests.post(API_URL, json=paper_data)
-            if response.status_code == 201:
-                print(f"Successfully added: {row['Article Title']}")
-            else:
-                print(f"Failed to add: {row['Article Title']} - Status Code: {response.status_code}")
-
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(file_path, header=0)
+        print(f"Columns in {file_path}:", df.columns)
     except Exception as e:
-        print(f"Error processing entry: {row.get('Article Title', 'Unknown')} - {e}")
+        print(f"Error reading file {file_path}: {e}")
+        continue
+
+    # Iterate through rows in the DataFrame
+    for _, row in df.iterrows():
+        try:
+            if pd.notna(row["Article Title"]):
+                # Prepare data based on the database structure
+                paper_data = {
+                    "article_title": row["Article Title"],
+                    "article_authors": row.get("Article Authors", "Unknown"),
+                    "article_abstract": row.get("Article Abstract", None),
+                    "article_link": row.get("Article Link", None),
+                    "search_terms": row.get("Search Terms", None),
+                }
+
+                # Replace NaN values with None
+                paper_data = {key: (None if isinstance(value, float) and math.isnan(value) else value) for key, value in
+                              paper_data.items()}
+
+                # Check for duplicates by title
+                response = requests.get(f"{API_URL}/search", params={"title": paper_data["article_title"]})
+                if response.status_code == 200 and response.json():  # Paper exists
+                    print(f"Duplicate found. Skipping: {row['Article Title']}")
+                    continue
+
+                print("Data being sent:", paper_data)
+
+                # Post data to the API
+                response = requests.post(API_URL, json=paper_data)
+                if response.status_code == 201:
+                    print(f"Successfully added: {row['Article Title']}")
+                else:
+                    print(f"Failed to add: {row['Article Title']} - Status Code: {response.status_code}")
+
+        except Exception as e:
+            print(f"Error processing entry: {row.get('Article Title', 'Unknown')} - {e}")
