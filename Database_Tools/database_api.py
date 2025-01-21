@@ -17,8 +17,8 @@ These are the updated columns in the database.
 """
 class ResearchPaper(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    article_title = db.Column(db.String, nullable=False)
-    article_authors = db.Column(db.String, nullable=False)
+    article_title = db.Column(db.String, nullable=True)
+    article_authors = db.Column(db.String, nullable=True)
     article_abstract = db.Column(db.Text, nullable=True)
     article_link = db.Column(db.String, nullable=True)
     search_terms = db.Column(db.String, nullable=True)
@@ -29,6 +29,38 @@ with app.app_context():
     db.create_all()
 
 # API Endpoints
+
+"""Endpoint specifically for batch insertion."""
+@app.route('/papers/batch', methods=['POST'])
+def add_papers_batch():
+    """ Add multiple research papers in a batch."""
+    data = request.json
+    if not isinstance(data, list):
+        return jsonify({"error": "Input should be a list of papers"}), 400
+
+    try:
+        # Retrieve existing titles for duplicate checks
+        existing_titles = set([paper.article_title for paper in ResearchPaper.query.all()])
+        papers_to_add = []
+
+        for paper in data:
+            if paper['article_title'] not in existing_titles:
+                papers_to_add.append(ResearchPaper(
+                    article_title=paper['article_title'],
+                    article_authors=paper['article_authors'],
+                    article_abstract=paper.get('article_abstract'),
+                    article_link=paper.get('article_link'),
+                    search_terms=paper.get('search_terms')
+                ))
+                existing_titles.add(paper['article_title'])
+
+        db.session.bulk_save_objects(papers_to_add)
+        db.session.commit()
+        return jsonify({"message": f"{len(papers_to_add)} papers added successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/papers', methods=['POST'])
 def add_paper():
     """ Add a new research paper."""

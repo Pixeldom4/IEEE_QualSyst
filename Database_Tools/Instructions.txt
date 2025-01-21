@@ -1,3 +1,5 @@
+Note: before running the steps below run clean_csv.py but note that this script is not for production use and is flawed and made just for testing.
+
 1. Run the database_api.py file to start the backend server [via console, gitbash or directly via python]
 2. Run the populate database script. Make sure to change the file path.
    Note: the script is a rough script but we need to do more data cleaning on
