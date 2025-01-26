@@ -413,7 +413,7 @@ def establish_vpn(start, pag_num, art_num):
 
                             selector = "#srp-results-list ol li:nth-child({}) .preview-links-container"
                             other_sel = "#srp-results-list ol li:nth-child({})"
-                            z = 27
+                            z = 102
                             time.sleep(5)
                             #input("!1")
                             # Loop through each item (i from 1 to 25)
