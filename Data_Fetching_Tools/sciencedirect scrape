@@ -1,0 +1,704 @@
+import selectors
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import re
+import requests
+import time
+import csv
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import StaleElementReferenceException
+from selenium.webdriver.chrome.options import Options
+import os
+from selenium.webdriver.common.action_chains import ActionChains
+
+
+def vpn_ban(driver):
+     try:
+        ban_text = driver.find_element(By.CSS_SELECTOR, '#main-content > div > div > div > div.card-content > h1')
+        if "There was a problem providing the content you requested" in ban_text.text:
+            return "banned"
+     except:
+        try: 
+           driver.find_element(By.CSS_SELECTOR, ".neterror")
+           driver.refresh()
+            
+        except:
+            try:
+                ban_text = driver.find_element(By.CSS_SELECTOR, '#main-content > div > div > div > div.card-content > h1')
+                if "There was a problem loading this page" in ban_text.text:
+                    return "banned"
+            except:
+                pass    
+    
+
+def count_non_empty_rows(file_path):
+    count = 0
+    with open(file_path, 'r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            # Check if the row has any non-empty value
+            if any(cell.strip() for cell in row):  # `.strip()` removes leading/trailing whitespace
+                count += 1
+    return count
+
+def read_csv_file(file_path):
+    data = []
+    with open(file_path, 'r', newline='') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            data.append(row)
+    return data
+
+def clickCookiesPopUp(driver):
+     try:
+        cookies_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#onetrust-accept-btn-handler')))
+        cookies_button.click()
+     except:
+        print("Cookies pop-up not found or couldn't be clicked.")
+        
+
+def is_network_banned(driver):
+    try:
+        banned = driver.find_element(By.CSS_SELECTOR, "#main-frame-error")
+        driver.refresh()
+    except:
+        pass
+
+
+def find_article_abstract_page(driver):
+    try:
+        print(driver.current_url)
+        x = 0
+
+        while "pdfft?" in driver.current_url and x < 30:
+            print("Variable contains 'pdfft?'. Pausing until condition is met...")
+            time.sleep(1)  # Pause before checking again
+            x = x + 1
+        if x >= 29:
+            abstract = "banned IP"
+            return abstract
+        
+        if vpn_ban(driver) == "banned":
+            abstract = "banned IP"
+            return abstract         
+
+        print(driver.current_url)
+        WebDriverWait(driver, 10).until(lambda d: d.execute_script('return document.readyState') == 'complete')
+        print("page loaded")
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        print("looking for abstract")
+        abstractLink = driver.find_element(By.CSS_SELECTOR, "#mathjax-container > div.article-wrapper.grid.row > article > a") 
+        abstractLink.click()
+        print("abstract found")            
+        abstract_element = driver.find_element(By.CSS_SELECTOR, "#preview-section-snippets > div.Snippets.u-font-serif")  #preview-section-abstract
+        abstract = abstract_element.text
+        print(abstract)
+        return abstract
+        #if abstract == "":
+        #    print("raised error")
+        #    raise ValueError
+        #driver.back()
+        
+    except:
+        try:
+            print("looking for abstract (2)")
+            text_tags = ["#abstracts, div#preview-section-snippets", "#mathjax-container > div.article-wrapper.u-padding-s-top.grid.row > article > a > span", "#mathjax-container > div.article-wrapper.u-padding-s-top.grid.row > article > a > span"]
+            for tag in text_tags:
+                try:
+                    abstract_element = driver.find_element(By.CSS_SELECTOR, tag)
+                    print("abstract found (2)")
+                    abstract = abstract_element.text
+                    print("abstract found (3)")
+                    print(abstract)
+                    return abstract
+                except:
+                    print("trying")
+                    pass
+            #full_text_link = driver.find_element(By.CSS_SELECTOR, "#mathjax-container > div.article-wrapper.u-padding-s-top.grid.row > article > a > span")
+            #print("full text found")
+            #driver.back()
+                               
+        except:
+            abstract = "no abstract"
+            return abstract
+
+def num_of_search_results(file_number):
+    try:    
+        driver = webdriver.Chrome()
+  
+
+
+        # Set up Chrome options to load the extracted extension folder
+        chrome_options = Options()
+        
+        # Replace this with the path to the extracted extension folder
+        extracted_extension_path = r"C:\Users\somna\Downloads\Free-VPN-for-Chrome-VPN-Proxy-VeePN-Chrome-Web-Store"
+
+        # Load the VPN extension
+        chrome_options.add_argument(f"--load-extension={extracted_extension_path}")
+
+        # Initialize the WebDriver with the Chrome options
+        driver = webdriver.Chrome(options=chrome_options)
+
+        # Open the VPN extension's popup page (if it has one)
+        driver.get("chrome-extension://kihaponndfmpgjodnokphhhhfpbiejda/src/popup/popup.html")  # Replace <your_extension_id> with the actual extension ID
+
+        original_tab = driver.current_window_handle
+        time.sleep(2)
+
+
+
+        all_tabs = driver.window_handles
+
+        # Switch to the new tab (the last one opened)
+        for tab in all_tabs:
+            if tab != original_tab:  # Compare with the original tab handle
+                driver.switch_to.window(tab)
+                break
+
+        driver.close()
+
+        # Switch back to the original tab
+        driver.switch_to.window(original_tab)
+        # Wait until the elements are loaded
+
+        continue_selector = "#root > div.onboarding-view.fullheight > div > footer > button"
+        start_selector = "#root > div.onboarding-view.fullheight > div > footer > button"
+        connect_selector = "#root > main > div.main-view__inner > div > div.main-view__connect > button"
+        
+  
+
+        try:
+            # Example: Wait for a specific button (e.g., "Connect" button) to be clickable
+            continue_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, continue_selector)))
+            continue_button.click()  # Click the "Connect" button
+            start_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, start_selector)))
+            start_button.click()  # Click the "Connect" button
+            connect_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, connect_selector)))
+            connect_button.click()  # Click the "Connect" button
+
+            # Optionally wait for some time to allow the VPN connection to establish
+            time.sleep(5)
+
+        except Exception as e:
+            print("An error occurred:", e)
+    
+    
+        is_network_banned(driver)
+   
+        driver.get("https://www.sciencedirect.com/")
+
+        is_network_banned(driver)
+        driver.refresh()
+        clickCookiesPopUp(driver)
+        if vpn_ban(driver) == "banned":
+            return "banned"
+        adva_sear_btn = WebDriverWait(driver, 1000).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchbar > div > div > form > div.form-button-link-container > a > span > span")))
+        adva_sear_btn.click()
+
+        clickCookiesPopUp(driver)
+        if vpn_ban(driver) == "banned":
+            return "banned"
+        try:
+            organization_request = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-email")))
+            organization_request.send_keys(input("enter email: "))
+            organization_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-els-searchBtn")))
+            organization_button.click()
+
+            clickCookiesPopUp(driver)        
+            if vpn_ban(driver) == "banned":
+                return "banned"
+            password_request = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-password")))
+            password_request.send_keys(input("enter password: "))
+            password_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-elsPrimaryBtn")))
+            password_button.click()
+
+        except:
+            if vpn_ban(driver) == "banned":
+                return "banned"
+            pass
+
+        clickCookiesPopUp(driver)
+        if vpn_ban(driver) == "banned":
+            return "banned"
+        search_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#qs")))
+        date_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#date")))
+
+
+        search_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.BottomLinksGroup button")))
+        time.sleep(2)
+        date_box.send_keys("2005-2025")
+        file_path = "C:\\Users\\somna\\OneDrive\\Desktop\\KeyWords.csv"
+        keyWord_data = read_csv_file(file_path)
+        search_term = keyWord_data[file_number]
+        search_box.send_keys(search_term)
+        search_button.click()
+        try:
+            num_res = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#srp-facets > div.ResultsFound > h1 > span"))).text
+            number = re.sub(r'\D', '', num_res)
+            return int(number)
+        except:
+            return int(input("how many search results are there? (Only use numbers): "))
+    except:
+        return "banned" 
+    
+def find_num_results(file_number):
+    number = num_of_search_results(file_number) 
+    while "banned" in str(number):
+        number = num_of_search_results(file_number)
+    return int(number)  
+
+def establish_vpn(start, pag_num, art_num):
+    # Initialize Chrome WebDriver
+    try:
+        driver = webdriver.Chrome()
+
+
+    
+    
+
+
+        # Set up Chrome options to load the extracted extension folder
+        chrome_options = Options()
+
+        # Replace this with the path to the extracted extension folder
+        extracted_extension_path = r"C:\Users\somna\Downloads\Free-VPN-for-Chrome-VPN-Proxy-VeePN-Chrome-Web-Store"
+
+        # Load the VPN extension
+        chrome_options.add_argument(f"--load-extension={extracted_extension_path}")
+
+        # Initialize the WebDriver with the Chrome options
+        driver = webdriver.Chrome(options=chrome_options)
+
+        # Open the VPN extension's popup page (if it has one)
+        driver.get("chrome-extension://kihaponndfmpgjodnokphhhhfpbiejda/src/popup/popup.html")  # Replace <your_extension_id> with the actual extension ID
+
+        original_tab = driver.current_window_handle
+        time.sleep(2)
+
+
+
+        all_tabs = driver.window_handles
+
+        # Switch to the new tab (the last one opened)
+        for tab in all_tabs:
+            if tab != original_tab:  # Compare with the original tab handle
+                driver.switch_to.window(tab)
+                break
+
+        driver.close()
+
+        # Switch back to the original tab
+        driver.switch_to.window(original_tab)
+        # Wait until the elements are loaded
+
+        continue_selector = "#root > div.onboarding-view.fullheight > div > footer > button"
+        start_selector = "#root > div.onboarding-view.fullheight > div > footer > button"
+        connect_selector = "#root > main > div.main-view__inner > div > div.main-view__connect > button"
+        
+  
+
+        try:
+            # Example: Wait for a specific button (e.g., "Connect" button) to be clickable
+            continue_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, continue_selector)))
+            continue_button.click()  # Click the "Connect" button
+            start_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, start_selector)))
+            start_button.click()  # Click the "Connect" button
+            connect_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, connect_selector)))
+            connect_button.click()  # Click the "Connect" button
+
+            # Optionally wait for some time to allow the VPN connection to establish
+            time.sleep(5)
+
+        except Exception as e:
+            print("An error occurred:", e)
+    
+    except:
+        return "banned"
+    
+    try:
+    
+        is_network_banned(driver)
+   
+        driver.get("https://www.sciencedirect.com/")
+
+        is_network_banned(driver)
+        driver.refresh()
+        time.sleep(2)
+        clickCookiesPopUp(driver)
+        if vpn_ban(driver) == "banned":
+            return "banned"
+        adva_sear_btn = WebDriverWait(driver, 1000).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchbar > div > div > form > div.form-button-link-container > a > span > span")))
+        adva_sear_btn.click()
+        time.sleep(2)
+        clickCookiesPopUp(driver)
+        if vpn_ban(driver) == "banned":
+            return "banned"
+        try:
+            organization_request = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-email")))
+            organization_request.send_keys(input("enter email: "))
+            organization_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-els-searchBtn")))
+            organization_button.click()
+
+            clickCookiesPopUp(driver)        
+            if vpn_ban(driver) == "banned":
+                return "banned"
+            password_request = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-password")))
+            password_request.send_keys(input("enter password: "))
+            password_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#bdd-elsPrimaryBtn")))
+            password_button.click()
+
+        except:
+            if vpn_ban(driver) == "banned":
+                return "banned"
+            pass
+
+        clickCookiesPopUp(driver)
+        if vpn_ban(driver) == "banned":
+            return "banned"
+        search_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#qs")))
+        date_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#date")))
+
+
+        search_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.BottomLinksGroup button")))
+        time.sleep(2)
+        date_box.send_keys("2005-2025")
+        file_path = "C:\\Users\\somna\\OneDrive\\Desktop\\KeyWords.csv"
+        keyWord_data = read_csv_file(file_path)
+        for search_term in keyWord_data[start:]:
+            search_box.send_keys(search_term)
+            search_button.click()
+            search_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#qs")))
+            search_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#aa-srp-search-submit-button > button > svg")))
+
+            clickCookiesPopUp(driver)
+            if vpn_ban(driver) == "banned":
+                return "banned"
+            search_box.send_keys(Keys.BACKSPACE * len(str(search_term)))
+            fileN = str(search_term).replace("/", "")    
+
+            row_indice = 0
+
+            file_name = f"{fileN}_sciencedirect_finale.csv"
+            search_path = "C:\\Users\\somna\\source\\repos\\sciencedirect_not_using_school\\sciencedirect_not_using_school\\" + str(file_name)
+            if os.path.exists(search_path):
+                with open(search_path, 'a', newline='', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    tot = 1
+                    for h in range(1, 21):
+                        time.sleep(3)
+                        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        time.sleep(3)
+                        hundred_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,'#srp-pagination-options > div.move-left > ol > li:nth-child(3) > a')))
+                        hundred_button.click()
+                        time.sleep(3)
+                        if tot != pag_num:
+                            time.sleep(2)    
+                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                            time.sleep(1)
+                            next_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,'.pagination-link.next-link a')))
+                            next_button.click()
+                            tot = tot + 1
+                            continue
+                    
+                        a = 0
+                        #input("!a")
+                        try:
+                            matching_elements = driver.find_elements(By.CSS_SELECTOR, ".ResultItem")  # Replace "your_css_selector" with your actual CSS selector
+
+                            selector = "#srp-results-list ol li:nth-child({}) .preview-links-container"
+                            other_sel = "#srp-results-list ol li:nth-child({})"
+                            z = 27
+                            time.sleep(5)
+                            #input("!1")
+                            # Loop through each item (i from 1 to 25)
+                            for i in range(art_num, z):
+                                # Build the CSS selector for the current item
+                                #input("a!")
+                                current_selector = selector.format(i)
+                                other_selector = other_sel.format(i)
+                                #input("!")
+                                y=0
+                                try:
+                                    original_window = driver.current_window_handle
+                                    # Find the element corresponding to the current item
+                                    if i == 1:
+                                        time.sleep(5)
+                                    item = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, current_selector)))
+                                    abstract_tag = current_selector + " > li:nth-child(2) .preview-button-text"
+                                    title = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, other_selector + " .anchor"))).text 
+                                    authors = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, other_selector + " .Authors"))).text
+                                    title_element = driver.find_element(By.CSS_SELECTOR, other_selector + " .anchor")
+                                    title = title_element.text
+                                    link = title_element.get_attribute("href")
+                                    a = 0
+                                    #input("!v")
+                                    #print(abstract_tag)
+                                    if  WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text == "Abstract":
+                                        abstract_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag)))
+                                        abstract_btn.click()
+                                        abstract_tag = current_selector[:-25] + " .ArticlePreview"
+                                        #input("!as")
+                                        time.sleep(1)
+                                        abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                                        if abstract == "loading":
+                                            print("didn't load yet")
+                                            time.sleep(1)
+                                            abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                            
+                                        print(abstract)
+                                    else:
+                                        pdf_tag = current_selector + " > li:nth-child(1) .preview-link-text"
+                                        #print("something else 1")
+                                        if  WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, pdf_tag))).text == "Abstract":
+                                            #print("something else 2")
+                                            abstract_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag)))
+                                            abstract_btn.click()
+                                            abstract_tag = current_selector[:-25] + " .ArticlePreview"
+                        
+                                            time.sleep(1)
+                                            abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                                            while abstract == "loading":
+                                                time.sleep(1)
+                                                abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                                            print(abstract)
+                                        else:
+                                            #print("something else 3")
+                                            pdf_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, pdf_tag)))
+                                            #print("something else 4")
+                                            # Click on the item to navigate to a new page
+                                            pdf_btn.click()
+                                            #print("something else 5")
+                                            #pdf_btn.send_keys(Keys.CONTROL + Keys.RETURN)
+                    
+                                            for window_handle in driver.window_handles:
+                                                #print("something else 6")
+                                                if window_handle != original_window:
+                                                    #print("something else 7*")
+                                                    driver.switch_to.window(window_handle)
+                                                    break
+
+                                            time.sleep(2)
+                                            abstract = find_article_abstract_page(driver)
+                        
+
+                                            driver.close()
+                                            driver.switch_to.window(original_window)
+                                            time.sleep(2)
+
+                                            print(i)
+                                            if abstract == "banned IP":
+                                                print("banned")
+                                                return "banned"
+                                            
+                                except:
+                                    y=1
+                                    print("a = " + str(a))
+                                    a = a + 1
+                                    z = z + 1
+                                    if a == 4:
+                                        break
+                                if y != 1:
+                                    writer.writerow(['"' + str(title) + '"', '"' + str(authors) + '"', '"' + str(abstract) + '"', '"' + str(link) + '"'])
+                                    row_indice = row_indice + 1
+                                    print("succesfully entered row #" + str(row_indice) + " in file")
+                            time.sleep(2)    
+                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                            time.sleep(1)
+                            next_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,'.pagination-link.next-link a')))
+                            next_button.click()
+                            art_num = 1
+                        except:
+                            pass
+                continue
+            
+            with open(file_name, 'w', newline='', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['Article Title', 'Article Authors', 'Article Abstract', 'Article Link'])
+                    tot = 1
+                    for h in range(1, 21):
+                        time.sleep(3)
+                        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        time.sleep(3)
+                        hundred_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,'#srp-pagination-options > div.move-left > ol > li:nth-child(3) > a')))
+                        hundred_button.click()
+                        time.sleep(3)
+                        if tot != pag_num:
+                            time.sleep(2)    
+                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                            time.sleep(1)
+                            next_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,'.pagination-link.next-link a')))
+                            next_button.click()
+                            tot = tot + 1
+                            continue
+                    
+                        a = 0
+                        #input("!a")
+                        try:
+                            matching_elements = driver.find_elements(By.CSS_SELECTOR, ".ResultItem")  # Replace "your_css_selector" with your actual CSS selector
+
+                            selector = "#srp-results-list ol li:nth-child({}) .preview-links-container"
+                            other_sel = "#srp-results-list ol li:nth-child({})"
+                            z = 101
+                            time.sleep(5)
+                            #input("!1")
+                            # Loop through each item (i from 1 to 100)
+                            for i in range(art_num, z):
+                                # Build the CSS selector for the current item
+                                #input("a!")
+                                current_selector = selector.format(i)
+                                other_selector = other_sel.format(i)
+                                #input("!")
+                                y=0
+                                try:
+                                    original_window = driver.current_window_handle
+                                    # Find the element corresponding to the current item
+                                    if i == 1:
+                                        time.sleep(5)
+                                    item = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, current_selector)))
+                                    abstract_tag = current_selector + " > li:nth-child(2) .preview-button-text"
+                                    title = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, other_selector + " .anchor"))).text 
+                                    authors = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, other_selector + " .Authors"))).text
+                                    title_element = driver.find_element(By.CSS_SELECTOR, other_selector + " .anchor")
+                                    title = title_element.text
+                                    link = title_element.get_attribute("href")
+                                    a = 0
+                                    #input("!v")
+                                    #print(abstract_tag)
+                                    if  WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text == "Abstract":
+                                        abstract_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag)))
+                                        abstract_btn.click()
+                                        abstract_tag = current_selector[:-25] + " .ArticlePreview"
+                                        #input("!as")
+                                        time.sleep(1)
+                                        abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                                        if abstract == "loading":
+                                            print("didn't load yet")
+                                            time.sleep(1)
+                                            abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                            
+                                        print(abstract)
+                                    else:
+                                        pdf_tag = current_selector + " > li:nth-child(1) .preview-link-text"
+                                        #print("something else 1")
+                                        if  WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, pdf_tag))).text == "Abstract":
+                                            #print("something else 2")
+                                            abstract_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag)))
+                                            abstract_btn.click()
+                                            abstract_tag = current_selector[:-25] + " .ArticlePreview"
+                        
+                                            time.sleep(1)
+                                            abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                                            while abstract == "loading":
+                                                time.sleep(1)
+                                                abstract = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, abstract_tag))).text
+                                            print(abstract)
+                                        else:
+                                            #print("something else 3")
+                                            pdf_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, pdf_tag)))
+                                            #print("something else 4")
+                                            # Click on the item to navigate to a new page
+                                            pdf_btn.click()
+                                            #print("something else 5")
+                                            #pdf_btn.send_keys(Keys.CONTROL + Keys.RETURN)
+                    
+                                            for window_handle in driver.window_handles:
+                                                #print("something else 6")
+                                                if window_handle != original_window:
+                                                    #print("something else 7*")
+                                                    driver.switch_to.window(window_handle)
+                                                    break
+
+                                            time.sleep(2)
+                                            abstract = find_article_abstract_page(driver)
+                        
+
+                                            driver.close()
+                                            driver.switch_to.window(original_window)
+                                            time.sleep(2)
+
+                                            print(i)
+                                            if abstract == "banned IP":
+                                                print("banned")
+                                                return "banned"
+                                            
+                                except:
+                                    y=1
+                                    print("a = " + str(a))
+                                    a = a + 1
+                                    z = z + 1
+                                    if a == 6:
+                                        break
+                                if y != 1:
+                                    writer.writerow(['"' + str(title) + '"', '"' + str(authors) + '"', '"' + str(abstract) + '"', '"' + str(link) + '"'])
+                                    row_indice = row_indice + 1
+                                    print("succesfully entered row #" + str(row_indice) + " in file")
+                            time.sleep(2)    
+                            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                            time.sleep(1)
+                            next_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,'.pagination-link.next-link a')))
+                            next_button.click()                                    
+                            art_num = 1        
+                        except:
+                            break
+                    pag_num = 1
+    except:
+        return "banned"
+
+
+
+
+
+
+def run_through_bans():
+        try_num = 0
+        finish = 2
+        last_iteration_time = time.time()
+        time_interval = 201
+        while try_num != finish: 
+            try_num = try_num + 1
+            
+            file_path = r(input("enter file path for keword csv (you will want to harcode all of these): "))
+            keyWord_data = read_csv_file(file_path)
+            file_number = -1
+            for search_term in keyWord_data:
+
+                fileN = str(search_term).replace("/", "")    
+
+                file_name = f"{fileN}_sciencedirect_finale.csv"     
+                search_path = "C:\\Users\\somna\\source\\repos\\sciencedirect_not_using_school\\sciencedirect_not_using_school\\" + str(file_name)
+                if os.path.exists(search_path):
+                    stored_path = search_path
+                    file_number = file_number + 1
+                else:
+                    break            
+
+            if file_number == -1:
+                file_number = 0
+            page_num = 1 + ((int(count_non_empty_rows(stored_path)) - 1) // 100)    
+            arti_num = (int(count_non_empty_rows(stored_path)) - 1) % 100 
+            
+            if int(count_non_empty_rows(stored_path)) >= 2001:
+                   print(int(count_non_empty_rows(stored_path)))    
+                   file_number = file_number + 1
+                   page_num = 1
+                   arti_num = 0
+                
+
+            if int (time_interval <= 200) and int(find_num_results(file_number)) <= int(count_non_empty_rows(stored_path)):
+                file_number = file_number + 1    
+                page_num = 1
+                arti_num = 0
+                
+            result_two = establish_vpn(file_number, page_num, arti_num)
+            if result_two == "banned":
+                finish = finish + 1
+            current_time = time.time()  
+            time_interval = current_time - last_iteration_time
+            last_iteration_time = current_time
+run_through_bans()
+
