@@ -1,0 +1,94 @@
+import pandas as pd
+
+# File paths
+outfile_path = input("enter total database file path (with double forwards slashes if yours uses single, instead of \ please use \\): ")
+training_file_path = input("enter training data file path (with double forwards slashes if yours uses single, instead of \ please use \\): ")
+
+def flag_duplicates(file_path):
+    """Finds duplicates in 'Article Abstract', 'Article Authors', or 'Article Title'."""
+    df = pd.read_csv(file_path, dtype=str)  # Read CSV file
+    duplicate_reports = {}
+    columns_to_check = ["Article Abstract", "Article Authors", "Article Title"]
+    
+    # Find duplicates for each column, ignoring empty or 'none' values
+    for col in columns_to_check:
+        valid_entries = df[(df[col].notna()) & (df[col].str.lower() != "none") & (df[col] != "")]
+        duplicate_groups = valid_entries[col].value_counts()
+        duplicate_groups = duplicate_groups[duplicate_groups > 1]  # Keep only actual duplicates
+        duplicate_reports[col] = duplicate_groups
+    
+    # Find rows with multiple duplicate columns
+    multi_duplicate_rows = set()
+    for i, col1 in enumerate(columns_to_check):
+        for col2 in columns_to_check[i+1:]:
+            common_rows = set(duplicate_reports[col1].index) & set(duplicate_reports[col2].index)
+            multi_duplicate_rows.update(common_rows)
+    
+    # Print results
+    for col, duplicates in duplicate_reports.items():
+        total_duplicates = len(duplicates)
+        unique_rows = len(df) - total_duplicates
+        print(f"Total {col} duplicates: {total_duplicates}, Rows after removal: {unique_rows}")
+        
+        # Print top 5 most common duplicates
+        top_6 = duplicates.head(6)
+        print(f"Top 6 most common duplicates in '{col}':")
+        for value, count in top_6.items():
+            print(f"  {value}: {count} occurrences")
+    
+    print("\nTotal rows with multiple duplicates:")
+    print(f"{len(multi_duplicate_rows)}, Rows after removal: {len(df) - len(multi_duplicate_rows)}")
+
+    # Print row numbers of multiple duplicates
+    print("Row numbers of multiple duplicates:", sorted(multi_duplicate_rows))
+
+# Run duplication checks
+print("Checking duplicates in database_of_abstracts.csv...")
+flag_duplicates(outfile_path)
+print("\nChecking duplicates in training_data_new.csv...")
+flag_duplicates(training_file_path)
+
+
+input("press enter for second assessment")
+
+
+def flag_duplicates(file_path):
+    """Finds duplicates in 'Article Abstract', 'Article Authors', or 'Article Title'."""
+    df = pd.read_csv(file_path, dtype=str)  # Read CSV file
+    duplicate_reports = {}
+    columns_to_check = ["Article Abstract", "Article Authors", "Article Title"]
+    
+    # Find duplicates for each column, ignoring empty or 'none' values
+    for col in columns_to_check:
+        valid_entries = df[(df[col].notna()) & (df[col].str.lower() != "none") & (df[col] != "")]
+        duplicate_groups = valid_entries[col].value_counts()
+        duplicate_groups = duplicate_groups[duplicate_groups > 1]  # Keep only actual duplicates
+        duplicate_reports[col] = duplicate_groups
+    
+    # Find rows with multiple duplicate columns
+    multi_duplicate_rows = set()
+    for i, col1 in enumerate(columns_to_check):
+        for col2 in columns_to_check[i+1:]:
+            common_rows = set(duplicate_reports[col1].index) & set(duplicate_reports[col2].index)
+            multi_duplicate_rows.update(common_rows)
+    
+    # Print results
+    for col, duplicates in duplicate_reports.items():
+        total_duplicates = len(duplicates)
+        unique_rows = len(df) - total_duplicates
+        print(f"Total {col} duplicates: {total_duplicates}, Rows after removal: {unique_rows}")
+        
+        # Print top 3 most common duplicates
+        top_3 = duplicates.head(3)
+        print(f"Top 3 most common duplicates in '{col}':")
+        for value, count in top_3.items():
+            print(f"  {value}: {count} occurrences")
+    
+    print("\nTotal rows with multiple duplicates:")
+    print(f"{len(multi_duplicate_rows)}, Rows after removal: {len(df) - len(multi_duplicate_rows)}")
+
+# Run duplication checks
+print("Checking duplicates in database_of_abstracts.csv...")
+flag_duplicates(outfile_path)
+print("\nChecking duplicates in training_data_new.csv...")
+flag_duplicates(training_file_path)
