@@ -1,0 +1,54 @@
+=========================================
+📌 Instructions for Using the Script
+=========================================
+
+1️⃣ Run the script:
+-------------------
+Open a terminal or command prompt and navigate to the script’s directory. Run:
+    python main.py
+
+2️⃣ Select a CSV file:
+----------------------
+- A file dialog will appear.
+- Choose the CSV file you want to process.
+
+3️⃣ Choose an action:
+---------------------
+Once a file is selected, you'll see a menu:
+
+    🔍 Choose an action:
+    1. Flag duplicates
+    2. Calculate Levenshtein distances
+    3. Remove duplicates
+    4. Exit
+
+Enter a number (1-4) to perform an action.
+
+4️⃣ Action Details:
+-------------------
+ 1️⃣ Flag Duplicates
+    - Analyzes duplicate entries in:
+        * Article Abstract
+        * Article Authors
+        * Article Title
+    - Prints statistics but does NOT modify the file.
+
+ 2️⃣ Calculate Levenshtein Distances
+    - Computes the minimum Levenshtein distance for each title.
+    - Creates a new file with "_with_distances.csv" appended.
+
+ 3️⃣ Remove Duplicates
+    - Removes duplicates ONLY from the "_with_distances.csv" file.
+    - (Must run option 2 first).
+    - Saves a new file with "_cleaned.csv" appended.
+
+ 4️⃣ Exit
+    - Closes the program.
+
+5️⃣ File Outputs:
+-----------------
+- Option 1 (Flag Duplicates): No file changes, just reports stats.
+- Option 2 (Levenshtein Distances): Creates `yourfile_with_distances.csv`.
+- Option 3 (Remove Duplicates): Creates `yourfile_with_distances_cleaned.csv`.
+
+🚀 Now your CSV file is cleaned and ready for further analysis! 🚀
