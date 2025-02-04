@@ -32,8 +32,8 @@ def flag_duplicates(file_name, base_directory=None):
             duplicate_rows = df[df[col].isin(duplicate_values.index)].index
             duplicate_indices.update(duplicate_rows)
 
-    # Find rows that have duplicates in multiple columns
-    df["is_duplicate"] = df.index.isin(duplicate_indices)
+    # Append boolean duplicates column and flags if all 3 fields are duplicates
+    df["is_duplicate"] = df.duplicated(subset=["Article Abstract", "Article Authors", "Article Title"], keep=False)
 
     # Print summary
     for col, duplicates in duplicate_reports.items():
