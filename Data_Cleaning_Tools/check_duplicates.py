@@ -61,7 +61,7 @@ def remove_duplicates(df, file_path):
 
 
 # Example usage
-file_name = "training_data.csv"
+file_name = "training_data_new.csv"
 df_with_duplicates, file_path = flag_duplicates(file_name)
 
 # Remove duplicates option

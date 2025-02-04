@@ -6,3 +6,8 @@ Step #1: Install Git LFS; Run "git lfs install" in the terminal
 Step #2: Track the file type you want to upload; ex. <git lfs track "*.csv">
 Step #2.5: <git add .gitattributes>
 Step #3: Add the file you want to add!
+Note: Git LFS is on hold, it will break if we exceed 1.5 gb, which we exceeded, so right now let's just not use it :)
+
+Please add files that we want script to act upon here (if possible). If the file is too large, and we need LFS for it,
+we can consider using the 1.5 gb allocation per month, or we can ask Matt if he can pay $5 a month for another 50 gb.
+This just makes the script easier to use...
