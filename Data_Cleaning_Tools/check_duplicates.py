@@ -43,8 +43,7 @@ def flag_duplicates(file_name, base_directory=None):
 
     print(f"\nTotal duplicate rows flagged: {df['is_duplicate'].sum()} / {len(df)}")
 
-    return df, file_path  # Return the DataFrame and file path for use in the next function
-
+    return df, file_path
 
 def remove_duplicates(df, file_path):
     """Removes duplicate rows and saves the cleaned data to a new CSV file."""
@@ -71,3 +70,5 @@ if user_input == "n":
     print("\nScript stopped. No changes were made.")
 elif user_input == "y":
     remove_duplicates(df_with_duplicates, file_path)
+elif user_input == "L":
+    print("\nRunning Levenshtein Analysis...")
