@@ -1,2 +1,8 @@
 To my understanding there are a bunch of databases across each of the academic databases. At some point we create a
 "master" database of all papers to avoid redundancy, but for now I'm just unloading proquest data here.
+
+If you are adding a large file (and the file is too big for Github), try using Git LFS (Large File Service)
+Step #1: Install Git LFS; Run "git lfs install" in the terminal
+Step #2: Track the file type you want to upload; ex. <git lfs track "*.csv">
+Step #2.5: <git add .gitattributes>
+Step #3: Add the file you want to add!

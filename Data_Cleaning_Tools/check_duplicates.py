@@ -7,7 +7,7 @@ def flag_duplicates(file_name, base_directory=None):
     # Default directory
     if base_directory is None:
         base_directory = os.path.join(os.path.expanduser("~"), "PycharmProjects", "IEEE_QualSyst", "Databases",
-                                      "Training_Data", "relevance_algo")
+                                      "relevance_algo_training_data")
 
     # Construct the full file path
     file_path = os.path.join(base_directory, file_name)
