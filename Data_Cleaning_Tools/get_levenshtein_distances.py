@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from Levenshtein import distance as levenshtein_distance
 
+# Note that levenshtein distances are being calculated with "Article Title"
 # File path
 file_name = "training_data_new.csv"
 base_directory = os.path.join(os.path.expanduser("~"), "PycharmProjects", "IEEE_QualSyst", "Databases",
