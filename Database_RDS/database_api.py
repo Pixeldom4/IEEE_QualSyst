@@ -5,15 +5,11 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 CORS(app)
 
-# RDS PostgreSQL Database Configuration
-DB_USER = "masteradmin"
-DB_PASSWORD = "your_password"
-DB_HOST = "paper-links.cnae26u2631w.us-east-2.rds.amazonaws.com"
-DB_NAME = "IEEEPAPERai123*"
-
-# Update SQLAlchemy connection string
-app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+"""
+Configure using SQLite database for testing. Will move to cloud when ready.
+"""
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///research_papers.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 """
