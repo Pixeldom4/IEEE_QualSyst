@@ -7,7 +7,6 @@ def calculate_min_levenshtein_distances(file_path: str, column_name: str = "Arti
     Calculates the minimum Levenshtein distance for each entry in a given column of a CSV file.
     Returns the updated file path with "_with_distances.csv" appended.
     """
-
     # Ensure the file exists
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"❌ Error: File '{file_path}' not found. Please check the path.")
