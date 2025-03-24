@@ -27,11 +27,11 @@ def classify_article(title):
         answer = response.text.strip()
         # Enforce expected output; if not exactly matching, default to "Irrelevant"
         if answer not in ["Relevant", "Irrelevant"]:
-            answer = "Irrelevant"
+            answer = "answer.error"
         return answer
     except Exception as e:
         print(f"Error processing title '{title}': {e}")
-        return "Irrelevant"
+        return "exception.error"
 
 def generate_explanation(title):
     """
