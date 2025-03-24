@@ -1,10 +1,10 @@
+import os
 import pandas as pd
 import time
 from google import genai
-from google.genai import types
 
 # Set your API key.
-API_KEY = 'AIzaSyDxc8K5NYjggrmx0bzkEHohKHsf0l-r_Is'
+API_KEY = os.environ.get('GOOGLE_GENAI_API_KEY')
 client = genai.Client(api_key=API_KEY)
 
 def classify_article(title):
