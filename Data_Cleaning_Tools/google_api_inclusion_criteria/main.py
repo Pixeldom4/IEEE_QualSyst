@@ -3,15 +3,14 @@ import time
 from google import genai
 from google.genai import types
 
-# Initialize the client with your API key.
-client = genai.Client(api_key="YOUR_API_KEY")
-
+# Set your API key.
+API_KEY = 'AIzaSyDxc8K5NYjggrmx0bzkEHohKHsf0l-r_Is'
+client = genai.Client(api_key=API_KEY)
 
 def classify_article(title):
     """
-    Uses the generative AI chat endpoint to classify an article title as
-    "Relevant" if it addresses clinical research/trials and/or digital health or
-    DEI-related barriers/strategies; otherwise, returns "Irrelevant".
+    Uses the generate_content endpoint to classify an article title as
+    "Relevant" if it meets the inclusion criteria; otherwise, returns "Irrelevant".
     """
     prompt = (
         f"Determine if the following article title meets these criteria:\n\n"
@@ -20,15 +19,13 @@ def classify_article(title):
         "Reply with exactly one word: either 'Relevant' or 'Irrelevant'.\n\n"
         f"Article Title: \"{title}\""
     )
-
     try:
-        response = client.chat(
-            messages=[types.Message(content=prompt, author=types.Author.USER)],
-            model="models/chat-bison-001"  # Update model name if necessary.
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
         )
-        # Assuming the response returns a 'last_message' with a 'text' attribute.
-        answer = response.last_message.text.strip()
-        # Enforce expected output; if not exactly matching, default to Irrelevant.
+        answer = response.text.strip()
+        # Enforce expected output; if not exactly matching, default to "Irrelevant"
         if answer not in ["Relevant", "Irrelevant"]:
             answer = "Irrelevant"
         return answer
@@ -36,30 +33,57 @@ def classify_article(title):
         print(f"Error processing title '{title}': {e}")
         return "Irrelevant"
 
+def generate_explanation(title):
+    """
+    Generates an explanation of why the article title is not relevant.
+    This function is called only when the classification is 'Irrelevant'.
+    """
+    explanation_prompt = (
+        "Explain why the following article title is not relevant to clinical research/clinical trials, "
+        "Digital Health Technologies, or discussions about DEI (Diversity, Equity, and Inclusion):\n\n"
+        f"Article Title: \"{title}\""
+    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=explanation_prompt
+        )
+        explanation = response.text.strip()
+        return explanation
+    except Exception as e:
+        print(f"Error generating explanation for title '{title}': {e}")
+        return "No explanation available"
 
 def main():
     # Load the CSV file containing the "Article Title" column.
-    input_filename = "C:/Users/Pixel/PycharmProjects/IEEE_QualSyst/Databases/search_and_scrape_data/filtering_training_data_5000.csv"
+    input_filename = "C:/Users/Pixel/PycharmProjects/IEEE_QualSyst/Databases/search_and_scrape_data/filtering_training_data_10.csv"
     df = pd.read_csv(input_filename)
 
     if "Article Title" not in df.columns:
         raise ValueError("CSV file must contain an 'Article Title' column.")
 
     results = []
+    explanations = []
     for title in df["Article Title"]:
         result = classify_article(title)
+        # If the classification is "Irrelevant", generate an explanation.
+        if result == "Irrelevant":
+            explanation = generate_explanation(title)
+        else:
+            explanation = ""  # Optionally leave empty or set to "N/A" for relevant titles.
         results.append(result)
+        explanations.append(explanation)
         # Pause briefly to respect API rate limits.
         time.sleep(1)
 
-    # Add a new column with the classification results.
+    # Append the new columns to the dataframe.
     df["Result"] = results
+    df["Explanation"] = explanations
 
     # Save the updated dataframe to a new CSV file.
     output_filename = "output.csv"
     df.to_csv(output_filename, index=False)
     print(f"Results saved to {output_filename}")
-
 
 if __name__ == "__main__":
     main()
